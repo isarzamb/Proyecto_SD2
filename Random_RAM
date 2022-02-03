@@ -2,8 +2,9 @@
 --https://vasanza.blogspot.com
 --https://github.com/vasanza/MSI-VHDL
 -- To generate random numbers, one-to-one addresses must be given while the GEN_RDM and WR signals are enabled.
---Consider that you must enter the seed in the first instance and from there degerar the other numbers.  
+--Consider that you must enter the seed in the first instance and from there generate the other numbers.  
 --to generate the seed you must enable load in addition to GEN_RDM and wr
+
 --Library
 library ieee;
 use ieee.std_logic_1164.all; 
