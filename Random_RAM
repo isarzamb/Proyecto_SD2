@@ -1,0 +1,66 @@
+--32-word 8-bit synchronous RAM
+--https://vasanza.blogspot.com
+--https://github.com/vasanza/MSI-VHDL
+
+--Library
+library ieee;
+use ieee.std_logic_1164.all; 
+use ieee.std_logic_arith.all; 
+use ieee.std_logic_unsigned.all;
+
+--Entity
+entity Random_RAM is 
+	generic(n: integer:=8;-- n-bits per data
+	m: integer:=8); -- m-bits of addresses
+	port(
+		clk,wr: in std_logic; 
+		addr : in std_logic_vector(m-1 downto 0); 
+		Din : in std_logic_vector(n-1 downto 0);
+		Dout : out std_logic_vector(n-1 downto 0);
+		reset_rdm: in std_logic; 
+		load: in std_logic;
+		gen_rdm: in std_logic;
+		seed: in std_logic_vector (7 downto 0));
+end Random_RAM;
+
+--Architecture
+architecture solve of Random_RAM is
+	-- Signals,Constants,Variables,Components	
+	type ram_type is array (0 to (2**m)-1) of std_logic_vector(n-1 downto 0); 
+	signal tmp_ram: ram_type;
+	signal lfsr_reg: std_logic_vector(7 downto 0);
+	begin
+	--Process #1:
+	process(clk,wr,reset_rdm)
+	--Sequential programming
+		begin 
+			if (reset_rdm = '1') then   -- reset en logica positiva
+						lfsr_reg <= (others => '0');
+			elsif (clk'event and clk='1') then 
+				if wr='1' and gen_rdm='1' then --Escribe numero random
+					if load='1' then
+							lfsr_reg<=seed;
+					else
+						lfsr_reg(0) <= lfsr_reg(7);
+						lfsr_reg(1) <= lfsr_reg(0);
+						lfsr_reg(2) <= lfsr_reg(1) xnor lfsr_reg(7);
+						lfsr_reg(3) <= lfsr_reg(2) xnor lfsr_reg(7);
+						lfsr_reg(4) <= lfsr_reg(3) xnor lfsr_reg(7);
+						lfsr_reg(5) <= lfsr_reg(4);
+						lfsr_reg(6) <= lfsr_reg(5);
+						lfsr_reg(7) <= lfsr_reg(6);
+					end if;
+					--tmp_ram(conv_integer(addr)) <= lfsr_reg;
+				--elsif wr='1' and gen_rdm='0' then --write
+						--tmp_ram(conv_integer(addr)) <= Din; 
+				end if;
+					if wr='1' and gen_rdm='0' then --write
+						tmp_ram(conv_integer(addr)) <= Din; 
+					elsif wr='1' and gen_rdm='1' then
+						tmp_ram(conv_integer(addr)) <= lfsr_reg;	
+					end if; 
+			end if; 
+	end process; 
+	Dout <= tmp_ram(conv_integer(addr));--read
+	--Process #n...
+end solve;
