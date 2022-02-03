@@ -10,20 +10,21 @@ use ieee.std_logic_1164.all;
 entity MSS is
 	port(
 		resetn,clk,start: in std_logic;
-		dir_actual_menor_255,dir_actual_igual_255, edad_actual_men_iter,dire_iter_igual_255: in std_logic;
+		termina_actual, cambio,termina_iterativo: in std_logic;
 		en_cnt,rst_cnt: out std_logic; --entradas del contador up 0
-		en_cnt_1,load_cnt_1,rst_cnt_1: out std_logic; -- entradas del cotador up 1
+		en_cnt_1,load_cnt,rst_cnt_1: out std_logic; -- entradas del cotador up 1
 		en_rg,rst_rg,en_rg_1,rst_rg_1: out std_logic; -- entradas de los registros para edad
-		en_rg_2,rst_rg_2,en_rg_3,rst_rg_3: out std_logic; -- entradas de los registros para edad
-		en_m,sel,en_m1,sel_1,en_m2,sel_2: out std_logic;
-		rw,reset_rdm,load_seed,gen_rdm :out std_logic; -- entradas de la random ram 0
-		rw_1,reset_rdm_1,load_seed_1,gen_rdm_1 : out std_logic); -- entradas de la random ram 0
+		en_rg_2,rst_rg_2,en_rg_3,rst_rg_3,rst_rg_dir,en_rg_dir: out std_logic; -- entradas de los registros para edad
+		sel,sel_1,sel_2,sel_3: out std_logic; --selectores de los mux
+		rw,reset_rdm,load_seed,gen_rdm:out std_logic; -- entradas de la random ram 0
+		rw_1,reset_rdm_1,load_seed_1,gen_rdm_1: out std_logic;
+		en_iterativo,rst_iterativo: out std_logic); -- entradas de la random ram 0
 end MSS;
 
 --Architecture
 architecture solve of MSS is
 	-- Signals,Constants,Variables,Components
-	type estado is (s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s13,s14,s15,s16);
+	type estado is (s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s13,s14,s15,s16,s17,s18,s19);
 	signal y: estado;
 	begin
 	--Process #1: Next state decoder and state memory
@@ -46,30 +47,37 @@ architecture solve of MSS is
 					when s3 => y<=s4;
 					when s4 => y <= s5;
 					when s5 => 
-								if dir_actual_igual_255='0' then y<=s4;
+								if termina_iterativo='0' then y<=s4;
 								else y<=s6;
 								end if;
 					when s6 => y <= s7;
 					when s7 => y <= s8;
 					when s8 => y <= s9;
-					when s9 => y <= s10;
-					when s10 => y <= s11;
-					when s11 =>
-								if edad_actual_men_iter='0' then
-								if dire_iter_igual_255='1' then y<=s12;
-								else y<=s9;
+					when s9 =>
+								if termina_iterativo='0' then y<=s10;
+								else y<=s12;
 								end if;
-								else y<=s13;
+					
+					when s10 =>
+								if cambio='0' then y<=s9;
+								else y<=s11;
 								end if;
-					when s12=>
-								if dir_actual_igual_255='0' then y<= s7;
+					when s11 => y<=s8;
+					when s12=> y<=s13;																
+					when s13 => y<=s14;
+					when s14 => y<=s19;
+								
+					when s15=> y<=s17;
+					when s16=> y<=s7;
+					when s17=> y<=s18;
+					when s18=>
+								if termina_iterativo='0' then y<= s17;
 								else y<=s1;
 								end if;
-								
-					when s13 => y<=s14;
-					when s14 => y<=s15;
-					when s15=> y<=s16;
-					when s16=> y<=s11;
+					when s19=> 
+								if termina_actual='1' then y<=s15;
+								else y<=s16;
+								end if;
 				end case;
 			end if;
 	end process;
@@ -77,39 +85,43 @@ architecture solve of MSS is
 	process(y)-- mealy ->(y,d,n)
 	--Sequential programming
 		begin
-			en_cnt<='0';rst_cnt<='0';-- cnt
-			en_cnt_1<='0';load_cnt_1<='0';rst_cnt_1<='0';--cnt_1
-			en_rg<='0';rst_rg<='0';en_rg_1<='0';rst_rg_1<='0';--rg,rg_1
-			en_rg_2<='0';rst_rg_2<='0';en_rg_3<='0';rst_rg_3<='0';--rg_2
-			en_m<='0';sel<='0';en_m1<='0';sel_1<='0';en_m2<='0';sel_2<='0';
+			en_cnt<='0';rst_cnt<='0';load_cnt<='0';-- cnt
+			en_cnt_1<='0';rst_cnt_1<='0';--cnt_1
+			en_rg<='0';rst_rg<='0';en_rg_1<='0';rst_rg_1<='0';
+			en_rg_2<='0';rst_rg_2<='0';en_rg_3<='0';rst_rg_3<='0';
+			en_rg_2<='0';rst_rg_2<='0';en_rg_3<='0';rst_rg_3<='0';rst_rg_dir<='0';en_rg_dir<='0';
 			rw<='0';reset_rdm<='0';load_seed<='0';gen_rdm <='0';
-			rw_1<='0';reset_rdm_1<='0';load_seed_1<='0';gen_rdm_1<='0';
+			rw_1<='0';reset_rdm_1<='0';load_seed_1<='0';gen_rdm_1<='0';rst_iterativo<='0';en_iterativo<='0';
 
 			case y is
 			-- proceso de llenado de la random ram
 				when s1 => rst_cnt_1<='1';rst_rg<='1';rst_rg_1<='1';rst_rg_2<='1';rst_rg_3<='1';
-							reset_rdm<='1';reset_rdm_1<='1';rst_cnt<='1';
+							reset_rdm<='1';reset_rdm_1<='1';rst_cnt<='1';rst_rg_dir<='1';
 				when s2 =>
 				when s3 => rw<='1';gen_rdm <='1';load_seed<='1';
 							  rw_1<='1';gen_rdm_1<='1';load_seed_1<='1';
 				when s4 => en_cnt<='1';
 				when s5 => rw<='1';gen_rdm <='1';
 							  rw_1<='1';gen_rdm_1<='1';
-				when s6=>  rst_cnt<='1';rst_cnt_1<='1';rst_rg<='1';rst_rg_1<='1';rst_rg_2<='1';rst_rg_3<='1';
+				when s6=>  rst_cnt<='1';rst_cnt_1<='1';rst_rg<='1';rst_rg_1<='1';rst_rg_2<='1';rst_rg_3<='1';rst_iterativo<='1';
 			
 			-- proceso de ordenamiento de los datos almacenados en la ram	
-				when s7=>  en_rg<='1';en_rg_2<='1';load_cnt_1<='1';
-				when s8=>
-				when s9=>  en_cnt_1<='1';
-				when s10=> sel<='1';en_rg_1<='1';en_rg_3<='1';
-				when s11=>
-				when s12=> en_cnt<='1';rst_cnt_1<='1'; 
-				when s13=> sel_1<='1';rw<='1';sel_2<='1';rw_1<='1';
-				when s14=> en_rg<='1';en_rg_2<='1';
-				when s15=> sel<='1';rw<='1';rw_1<='1';
-				when s16=> sel<='1';en_rg_1<='1';en_rg_3<='1';
-								
- 			end case;
+				when s7=> en_rg<='1'; en_rg_1<='1';
+				when s8=> 
+				when s9=> en_cnt<='1';en_iterativo<='1';
+				when s10=> 
+				when s11=> en_rg<='1'; en_rg_dir<='1';
+				when s12=>sel<='1';rw<='1';
+				when s13=> sel_1<='1'; sel_3<='1'; rw<='1'; 
+				when s14=> en_cnt_1<='1'; load_cnt<='1'; en_cnt<='1'; 
+				when s15=> rst_cnt<='1'; 
+				when s16=> en_cnt<='1';
+				when s17=>en_cnt<='1';
+				when s18=>	
+				when s19=>
+		
+
+				end case;
 	end process;
 	--Process #n... 
 end solve;
